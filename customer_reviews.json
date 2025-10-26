@@ -1,0 +1,213 @@
+{
+  "name": "-Анализ настроения клиентов по ключевым словам в отзывах",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5499610a-0c56-4ee7-97c6-ea01583da18b",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "<GDRIVE_ID>",
+          "mode": "list",
+          "cachedResultName": "резюме",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/<GDRIVE_ID>/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 473218319,
+          "mode": "list",
+          "cachedResultName": "отзывы1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/<GDRIVE_ID>/edit#gid=473218319"
+        },
+        "combineFilters": "=AND",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "937d8fca-ee19-41a3-978f-2bd2bf55be64",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "<CREDENTIALS>",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "f8706353-323d-43f8-b985-f414ee26cafc",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Берём данные из таблицы\nconst text = $json[\"отзыв\"] || \"\";\nconst author = $json[\"автор\"] || \"неизвестен\";\n\n// Если отзыва нет — возвращаем пустую запись\nif (!text) {\n  return [{\n    json: {\n      автор: author,\n      отзыв: text,\n      sentiment: \"нет данных\"\n    }\n  }];\n}\n\n// Определяем тональность\nlet sentiment = \"нейтральный\";\n\nif (text.match(/отлич|супер|удоб|рекомендую|нрав|люблю/i)) {\n  sentiment = \"позитивный\";\n}\nif (text.match(/плохо|долго|ужас|ненавижу|не\\s+нрав|проблем/i)) {\n  sentiment = \"негативный\";\n}\n\n// Возвращаем результат\nreturn [{\n  json: {\n    автор: author,\n    отзыв: text,\n    sentiment\n  }\n}];\n\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        96
+      ],
+      "id": "98c9b964-0424-4b70-b0df-f1f771f7e817",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "<GDRIVE_ID>",
+          "mode": "list",
+          "cachedResultName": "резюме",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/<GDRIVE_ID>/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 473218319,
+          "mode": "list",
+          "cachedResultName": "отзывы1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/<GDRIVE_ID>/edit#gid=473218319"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "сантимент": "={{ $json.sentiment }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "автор",
+              "displayName": "автор",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "отзыв",
+              "displayName": "отзыв",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "сантимент",
+              "displayName": "сантимент",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        624,
+        -96
+      ],
+      "id": "3cc33fda-3d9d-4f48-9e8b-f9fea085bfa8",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "<CREDENTIALS>",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0231a8c1-f6c2-49aa-8fda-db356469cf2e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ea579bb4322be5ed165038edfe7e4fb3eba44d13d8d0cb3a81f689d6167a6a13"
+  },
+  "id": "u4eRxKZYrHrWdhrq",
+  "tags": []
+}
